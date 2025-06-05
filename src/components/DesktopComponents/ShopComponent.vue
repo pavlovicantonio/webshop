@@ -13,197 +13,242 @@
           <v-img
             :src="product.image"
             :alt="product.name"
-            height="200px"
+            height="200"
             cover
-          ></v-img>
-
-          <v-card-title class="text-h6">
-            {{ product.name }}
-          </v-card-title>
-
-          <v-card-subtitle class="text-subtitle-1 font-weight-bold">
-            {{ product.price }} €
-          </v-card-subtitle>
-
-          <v-card-text>
-            {{ product.description }}
-          </v-card-text>
-
+          />
+          <v-card-title class="text-h6">{{ product.name }}</v-card-title>
+          <v-card-subtitle class="text-subtitle-1 font-weight-bold">{{ product.price }} €</v-card-subtitle>
+          <v-card-text class="description-clamp">{{ product.description }}</v-card-text>
           <v-card-actions>
-            <v-btn color="primary" @click="addToCart(product)" block>
-              Add to Cart
+            <v-btn color="primary" block @click="openInfo(product)">
+              Info
             </v-btn>
           </v-card-actions>
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Modal v-sheet -->
+    <v-sheet
+      v-if="infoDialog"
+      class="info-dialog"
+      elevation="12"
+      tile
+      style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+             width: 80vw; height: 70vh; background: white; z-index: 2000; overflow-y: auto; border-radius: 12px; padding: 24px;"
+    >
+      <v-row class="fill-height" align="center" justify="space-between">
+        
+        <!-- Lijevi stupac sa carouselom -->
+        <v-col cols="12" md="6" class="d-flex flex-column align-center">
+  <div v-if="selectedProduct && selectedProduct.id === equilibriumId" style="width: 100%;">
+    <v-carousel
+      v-model="carouselIndex"
+      hide-delimiters
+      height="300"
+      class="rounded-lg"
+    >
+      <v-carousel-item
+        v-for="item in equilibriumItems"
+        :key="item.id"
+      >
+        <v-img
+          :src="item.image"
+          :alt="item.name"
+          class="main-image"
+          height="300"
+          contain
+          style="width: 100%;"
+        />
+      </v-carousel-item>
+    </v-carousel>
+    <p class="text-center mt-2 font-weight-bold text-subtitle-1">
+      {{ equilibriumItems[carouselIndex].name }}
+    </p>
+  </div>
+
+  <div v-else>
+    <v-img
+      :src="selectedImage"
+      max-width="300"
+      max-height="300"
+      contain
+      class="main-image"
+    />
+  </div>
+</v-col>
+
+
+        <!-- Desni stupac s informacijama -->
+        <v-col cols="12" md="6" class="d-flex flex-column justify-space-between">
+          <div>
+            <h2>{{ selectedProduct.name }}</h2>
+            <h4 class="font-weight-bold">{{ selectedProduct.price }} €</h4>
+            <p style="white-space: pre-line;">{{ selectedProduct.description }}</p>
+
+            <!-- Checkboxovi za kolekciju -->
+            <div v-if="selectedProduct.id === equilibriumId" style="margin-top: 16px;">
+              <p><strong>Choose pieces from the Equilibrium Collection:</strong></p>
+              <v-checkbox
+                v-for="item in equilibriumItems"
+                :key="item.id"
+                v-model="selectedItems"
+                :label="item.name + ' - ' + item.price + ' €'"
+                :value="item"
+              />
+            </div>
+          </div>
+
+          <div>
+            <v-btn color="primary" block class="mb-3" @click="addSelectedToCart">
+              Add to Cart
+            </v-btn>
+            <v-btn color="secondary" block outlined @click="closeInfo">
+              Close
+            </v-btn>
+          </div>
+        </v-col>
+      </v-row>
+    </v-sheet>
+
+    <div v-if="infoDialog" class="modal-backdrop" @click="closeInfo"></div>
   </v-container>
 </template>
-<script>
-import { cart } from '../../../CartStore';
 
-export default {
-  data() {
-    return {
-      products: [
-        {
-          id: 1,
-          name: 'Nike Air Max',
-          price: 99,
-          description: 'Comfortable and stylish sneakers for everyday wear.',
-          image: 'https://static.nike.com/a/images/t_prod_ss/w_960,c_limit,f_auto/5c934a01-b207-4975-9429-c66fc9ecddb0/nike-air-max-90-golf-release-date.jpg'
-        },
-        {
-          id: 2,
-          name: 'Adidas Ultraboost',
-          price: 120,
-          description: 'High-performance running shoes with superior cushioning.',
-          image: 'https://assets.adidas.com/images/w_600,f_auto,q_auto/f96bc6605bde4187b473af3300f4646f_9366/Ultraboost_22_Shoes_Black_GX5464_01_standard.jpg'
-        },
-        {
-          id: 3,
-          name: 'Apple AirPods Pro',
-          price: 199,
-          description: 'Noise-cancelling wireless earbuds with premium sound.',
-          image: 'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/airpods-pro-gen2-2023_FMT_WHH?wid=940&hei=1112&fmt=png-alpha&.v=1693591513201'
-        },
-        {
-          id: 4,
-          name: 'Samsung Galaxy S22',
-          price: 799,
-          description: 'Powerful smartphone with a stunning AMOLED display.',
-          image: 'https://images.samsung.com/is/image/samsung/p6pim/hr/2202/gallery/hr-galaxy-s22-s901-sm-s901bzadeub-530427658'
-        },
-        {
-          id: 5,
-          name: 'Sony WH-1000XM4',
-          price: 349,
-          description: 'Top-tier wireless headphones with noise cancellation.',
-          image: 'https://m.media-amazon.com/images/I/71o8Q5XJS5L._AC_SL1500_.jpg'
-        },
-        {
-          id: 6,
-          name: 'Fitbit Charge 5',
-          price: 129,
-          description: 'Fitness tracker with built-in GPS and health monitoring.',
-          image: 'https://m.media-amazon.com/images/I/61ZXwnk9GUL._AC_SL1500_.jpg'
-        },
-        {
-          id: 7,
-          name: 'Dell XPS 13',
-          price: 999,
-          description: 'Sleek and powerful ultrabook for productivity.',
-          image: 'https://i.dell.com/sites/imagecontent/products/PublishingImages/xps-13-9315-laptop/spi/ng/notebook-xps-13-9315-hero-504x350.jpg'
-        },
-        {
-          id: 8,
-          name: 'Canon EOS R10',
-          price: 899,
-          description: 'Compact mirrorless camera for professional photography.',
-          image: 'https://www.canon-europe.com/media/eos-r10-product-front_tcm13-2118122.jpg'
-        },
-        {
-          id: 9,
-          name: 'GoPro HERO11',
-          price: 399,
-          description: 'Rugged action camera with 5.3K video and stabilization.',
-          image: 'https://gopro.com/content/dam/gopro/en/productpage/hero11-black/gallery-1.png'
-        },
-        {
-          id: 10,
-          name: 'Logitech MX Master 3S',
-          price: 99,
-          description: 'Advanced wireless mouse designed for productivity.',
-          image: 'https://resource.logitech.com/w_800,c_limit,q_auto,f_auto,dpr_1.0/d_transparent.gif/content/dam/logitech/en/products/mice/mx-master-3s/gallery/mx-master-3s-top-view-graphite.png?v=1'
-        },
-        {
-          id: 11,
-          name: 'Amazon Echo Dot (5th Gen)',
-          price: 49,
-          description: 'Smart speaker with Alexa and improved sound.',
-          image: 'https://m.media-amazon.com/images/I/61jovjd+f9L._AC_SL1000_.jpg'
-        },
-        {
-          id: 12,
-          name: 'Lenovo Legion 5 Pro',
-          price: 1299,
-          description: 'Gaming laptop with Ryzen processor and RTX graphics.',
-          image: 'https://p1-ofp.static.pub/medias/22736823564_Lenovo_Legion_5_Pro_16ACH6H_Hero_Front_Facing_Right_Thunder_Black.png'
-        },
-        {
-          id: 13,
-          name: 'Samsung 4K Smart TV 55"',
-          price: 599,
-          description: 'Crystal-clear 4K UHD TV with smart features.',
-          image: 'https://images.samsung.com/hr/tvs/uhd-4k/tv-uhd-4k-au7092-55-inch-ue55au7092uxxh-frontblack-401894126.png'
-        },
-        {
-          id: 14,
-          name: 'Apple Watch Series 9',
-          price: 399,
-          description: 'Smartwatch with advanced fitness and health tracking.',
-          image: 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/watch-s9-digitalmat-gallery-1-202309?wid=2000&hei=2000&fmt=jpeg&qlt=95&.v=1693186509784'
-        },
-        {
-          id: 15,
-          name: 'Bose SoundLink Flex',
-          price: 149,
-          description: 'Portable Bluetooth speaker with rich sound.',
-          image: 'https://assets.bose.com/content/dam/Bose_DAM/Web/consumer_electronics/global/products/speakers/soundlink_flex/product_silo_images/SoundLink_Flex_LuxeBlue_EC_hero.psd/jcr:content/renditions/cq5dam.web.320.320.png'
-        },
-        {
-          id: 16,
-          name: 'Nintendo Switch OLED',
-          price: 349,
-          description: 'Gaming console with vibrant OLED display.',
-          image: 'https://www.nintendo.com/eu/media/images/11_character/nintendo/switch/nintendo_switch_oled_model_white_set-01.png'
-        },
-        {
-          id: 17,
-          name: 'Harman Kardon Aura Studio 3',
-          price: 279,
-          description: 'Elegant Bluetooth speaker with 360° sound.',
-          image: 'https://www.harmankardon.co.in/on/demandware.static/-/Sites-masterCatalog_Harman/default/dw2025150e/HK_Aura_Studio3_Hero.png'
-        },
-        {
-          id: 18,
-          name: 'Microsoft Surface Pro 9',
-          price: 1099,
-          description: '2-in-1 laptop for work and creativity.',
-          image: 'https://cdn-dynmedia-1.microsoft.com/is/image/microsoftcorp/Surface-Pro-9-Platinum-Wallpaper-03?wid=828&hei=620&fit=crop'
-        },
-        {
-          id: 19,
-          name: 'Asus ROG Strix G17',
-          price: 1499,
-          description: 'Gaming laptop with high refresh rate screen.',
-          image: 'https://dlcdnwebimgs.asus.com/files/media/33FE1BB1-587E-48D7-97D4-874D57AD11D1/v1/img/kv.png'
-        },
-        {
-          id: 20,
-          name: 'Philips Hue Starter Kit',
-          price: 199,
-          description: 'Smart lighting kit with customizable colors.',
-          image: 'https://images.philips.com/is/image/PhilipsConsumer/046677530172-A1P-global-001?wid=420&hei=360&$jpglarge$'
-        }
-      ]
-    };
-  
+<script setup>
+import { ref, watch } from 'vue';
+import { cart } from '../../../CartStore'; // prilagodi putanju
+import pic3 from '@/assets/pic3.jpg';
+import pic33 from '@/assets/pic33.jpg';
+import pic333 from '@/assets/pic333.jpg';
+import pic2 from '@/assets/pic2.jpg';
+import pic1 from '@/assets/pic1.jpg';
+import pic5 from '@/assets/pic5.jpg';
+
+
+
+
+const products = ref([
+  {
+    id: 1,
+    name: 'Mariposa Royale Necklace',
+    price: 99,
+    description: 'Let your elegance take flight. ✨🦋 The Mariposa Royale Necklace is a radiant butterfly pendant crafted from real gold and adorned with dazzling stones. Symbolizing transformation, grace, and freedom, it’s your everyday reminder to shine unapologetically.',
+    image: pic2
   },
-  methods: {
-    addToCart(product) {
-      cart.addToCart(product);
-    }
+  {
+    id: 2,
+    name: 'Celeste Pearl Bracelet',
+    price: 120,
+    description: 'Grace never goes out of style. 🤍 The Celeste Pearl Bracelet is a modern homage to timeless beauty. A radiant string of luminous pearls paired with a delicate real gold chain — elegance with a whisper of nostalgia. Crafted from genuine materials, this bracelet is made with real gold and is 100% waterproof — designed for the woman who carries grace effortlessly, from day to night. Wear it. Feel it. Be unforgettable. ✨',
+    image: pic1
+  },
+  {
+    id: 3,
+    name: 'Dual Aura Bangles',
+    price: 45,
+    description: 'Two tones. One statement. ⚡ The Dual Aura Bangles blend the timeless strength of real gold and silver into a powerful minimalist silhouette. Crafted from genuine precious metals and fully waterproof, these bangles are your everyday armor — refined, radiant, and ready for anything. Wear them solo for subtle elegance, or stack for a modern bold edge. This is balance. This is brilliance. This is Éclat.',
+    image: pic5
+  },
+  {
+    id: 100,
+    name: 'Equilibrium Collection',
+    price: 50 +'-'+60,
+    description: `✨ Introducing the Equilibrium Collection ✨
+Crafted from genuine gold and sterling silver, these anti-stress necklace and ring sets are more than just jewelry — they are wearable symbols of serenity and self-expression.
+
+Each pendant spins effortlessly, designed to soothe your senses while adding a touch of timeless elegance. Let your fingers find peace in motion, and your mind find calm in beauty.
+
+🌙 Celestial Balance – For those seeking harmony within.
+🌞 Soluna Duality – For the dreamers balancing light and dark.
+🦋 Lumen Bloom – For the ones who bloom through change.
+
+🔄 Spin to release tension.
+🛡 Made with real gold and silver.
+🎁 Perfect for daily mindfulness or as a meaningful gift.`,
+    image: pic3
+  },
+]);
+
+const equilibriumId = 100;
+
+const equilibriumItems = ref([
+  { id: 101, name: 'Celestial Balance', price: 50, description: 'For those seeking harmony within.', image: pic333 },
+  { id: 102, name: 'Soluna Duality', price: 60, description: 'For the dreamers balancing light and dark.', image: pic33 },
+  { id: 103, name: 'Lumen Bloom', price: 55, description: 'For the ones who bloom through change.', image: pic3 },
+]);
+
+const infoDialog = ref(false);
+const selectedProduct = ref(null);
+const selectedItems = ref([]);
+const selectedImage = ref('');
+const carouselIndex = ref(0);
+
+function openInfo(product) {
+  selectedProduct.value = product;
+  selectedItems.value = [];
+  if (product.id === equilibriumId) {
+    selectedImage.value = equilibriumItems.value[0].image;
+    carouselIndex.value = 0;
+  } else {
+    selectedImage.value = product.image;
   }
-};
+  infoDialog.value = true;
+}
+
+function closeInfo() {
+  infoDialog.value = false;
+  selectedProduct.value = null;
+  selectedItems.value = [];
+  selectedImage.value = '';
+  carouselIndex.value = 0;
+}
+
+function addSelectedToCart() {
+  if (selectedProduct.value.id === equilibriumId) {
+    if (selectedItems.value.length === 0) {
+      alert('Please select at least one item from the collection.');
+      return;
+    }
+    selectedItems.value.forEach(item => {
+      cart.addToCart(item);
+    });
+  } else {
+    cart.addToCart(selectedProduct.value);
+  }
+  alert('Added to cart!');
+  closeInfo();
+}
+
+watch(carouselIndex, (newIndex) => {
+  if (selectedProduct.value && selectedProduct.value.id === equilibriumId) {
+    selectedImage.value = equilibriumItems.value[newIndex].image;
+  }
+});
+
 </script>
 
 <style scoped>
-.v-card {
-  transition: 0.3s ease-in-out;
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
 }
-.v-card:hover {
-  transform: scale(1.02);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+.description-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.main-image {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 </style>

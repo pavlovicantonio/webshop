@@ -2,7 +2,7 @@
   <v-sheet class="VS1" style="width: 100vw; height: 10vh; position: fixed; top: 0; left: 0; right: 0;">
     <v-toolbar flat>
       <v-toolbar-title style="font-family: 'Poppins', sans-serif; color: #001220;">
-        Webshop
+        Éclat
       </v-toolbar-title>
 
       <v-spacer></v-spacer>
